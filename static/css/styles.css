@@ -1,0 +1,111 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 80%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+h1, h2, h3 {
+    color: #333;
+}
+
+button {
+    font-size: 18px;
+    padding: 10px 20px;
+    margin-bottom: 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #333;
+    padding: 10px 20px;
+    color: white;
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+    margin-left: 20px;
+}
+
+.navbar a:hover {
+    text-decoration: underline;
+}
+
+.footer {
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+.video-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-top: 20px;
+}
+
+.video-feed-wrapper {
+    flex: 1;
+}
+
+.video-feed {
+    width: auto; /* Maintain original width */
+    height: auto; /* Maintain original height */
+    max-width: 100%; /* Ensure it doesn't overflow the container */
+    max-height: 100%; /* Ensure it doesn't overflow the container */
+}
+
+.controls {
+    margin-left: 20px;
+}
+
+.controls label {
+    margin-right: 10px;
+}
+
+.controls input {
+    width: 60px;
+    margin-right: 20px;
+}
+
+.captured-image-container {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.captured-image {
+    width: auto; /* Maintain original width */
+    height: auto; /* Maintain original height */
+    max-width: 100%; /* Ensure it doesn't overflow the container */
+    max-height: 100%; /* Ensure it doesn't overflow the container */
+    margin-top: 20px;
+    border: 1px solid #ccc;
+}
+
+.intermediate-image {
+    width: 50%;
+    margin-top: 10px;
+    border: 1px solid #ccc;
+}

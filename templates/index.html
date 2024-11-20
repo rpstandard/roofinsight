@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roof Insights</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <div class="title">Roof Insights</div>
+        <div class="links">
+            <a href="/">Home</a>
+        </div>
+    </div>
+    <div class="container">
+        <h1>Welcome to Roof Insights</h1>
+        <div class="video-container">
+            <div class="video-feed-wrapper">
+                <img src="{{ url_for('video_stream') }}" class="video-feed" />
+            </div>
+            <form action="/capture" method="post">
+                <div class="controls">
+                    <label for="lower_gloss_thresh">Lower Gloss Threshold:</label>
+                    <input type="number" id="lower_gloss_thresh" name="lower_gloss_thresh" value="{{ lower_gloss_thresh }}" min="0" max="255">
+
+                    <label for="upper_gloss_thresh">Upper Gloss Threshold:</label>
+                    <input type="number" id="upper_gloss_thresh" name="upper_gloss_thresh" value="{{ upper_gloss_thresh }}" min="0" max="255">
+
+                    <button type="submit" class="btn">Capture Image</button>
+                </div>
+            </form>
+        </div>
+        {% if captured_image %}
+            <div class="captured-image-container">
+                <h3>Processed Image:</h3>
+                <img id="captured-image" src="{{ captured_image }}" class="captured-image" />
+
+                <h3>Slab Segmentation Mask:</h3>
+                <img src="{{ slab_mask_image }}" class="intermediate-image" />
+
+                <h3>Gloss Mask:</h3>
+                <img src="{{ gloss_mask_image }}" class="intermediate-image" />
+
+                {% if glossy_percentage is not none %}
+                    <p>Glossy Area Percentage: {{ glossy_percentage|round(2) }}%</p>
+                {% else %}
+                    <p>Glossy Area Percentage: N/A</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    <div class="footer">
+        &copy; 2024 Roof Insights. All rights reserved.
+    </div>
+</body>
+</html>
