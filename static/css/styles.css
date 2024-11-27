@@ -109,3 +109,20 @@ button:hover {
     margin-top: 10px;
     border: 1px solid #ccc;
 }
+
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.grid-item {
+    text-align: center;
+}
+
+.grid-image {
+    width: 100%;
+    height: auto;
+    border: 1px solid #ccc;
+}

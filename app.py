@@ -6,6 +6,7 @@ import io
 from PIL import Image
 import base64
 import threading
+import time
 
 app = Flask(__name__)
 
@@ -61,22 +62,18 @@ def generate():
 
     while True:
         if latest_image is not None:
-            # Check if the image is grayscale (single channel)
-            if len(latest_image.shape) == 2:  # Grayscale
-                # Convert grayscale to RGB by duplicating the single channel
-                latest_image = cv2.cvtColor(latest_image, cv2.COLOR_GRAY2BGR)
+            # Convert RGB to BGR
+            latest_image = cv2.cvtColor(latest_image, cv2.COLOR_RGB2BGR)
 
-            # Ensure the image is in the proper format (3 channels)
-            if latest_image.shape[2] == 3:  # RGB
-                # Convert the image to JPEG format
-                ret, jpeg = cv2.imencode('.jpg', latest_image)
-
-                if ret:
-                    # Return the image as a byte stream
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
-            else:
-                print("Warning: Unsupported image format, skipping frame.")
+            # Convert the image to JPEG format
+            ret, jpeg = cv2.imencode('.jpg', latest_image)
+            if ret:
+                # Return the image as a byte stream
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
+        
+        # Add a delay of 1 second
+        time.sleep(1)
 
 @app.route('/video')
 def video_feed():
@@ -105,8 +102,17 @@ def capture():
         processed_image, glossy_percentage, slab_mask_data, gloss_mask_data = process_image(
             latest_image, lower_gloss_thresh, upper_gloss_thresh)
 
-        # Convert the processed image to a format that can be displayed in the browser
-        _, jpeg = cv2.imencode('.jpg', processed_image)
+        # Convert the original image from BGR to RGB
+        original_image_rgb = cv2.cvtColor(latest_image, cv2.COLOR_BGR2RGB)
+        # Encode the original image to display in the browser
+        _, jpeg = cv2.imencode('.jpg', original_image_rgb)
+        img_bytes = jpeg.tobytes()
+        original_image = f"data:image/jpeg;base64,{base64.b64encode(img_bytes).decode('utf-8')}"
+
+        # Convert the processed image from BGR to RGB
+        processed_image_rgb = cv2.cvtColor(processed_image, cv2.COLOR_BGR2RGB)
+        # Encode the processed image to display in the browser
+        _, jpeg = cv2.imencode('.jpg', processed_image_rgb)
         img_bytes = jpeg.tobytes()
         captured_image = f"data:image/jpeg;base64,{base64.b64encode(img_bytes).decode('utf-8')}"
 
@@ -115,6 +121,7 @@ def capture():
         gloss_mask_image = gloss_mask_data
 
     return render_template('index.html',
+                           original_image=original_image,
                            captured_image=captured_image,
                            glossy_percentage=glossy_percentage,
                            slab_mask_image=slab_mask_image,
@@ -147,7 +154,7 @@ def process_image(image, lower_gloss_thresh, upper_gloss_thresh):
     slab_regions = cv2.bitwise_and(image, image, mask=slab_mask)
 
     # Convert the slab regions to HSV to detect glossy patches
-    hsv = cv2.cvtColor(slab_regions, cv2.COLOR_RGB2HSV)
+    hsv = cv2.cvtColor(slab_regions, cv2.COLOR_BGR2HSV)
 
     # Define thresholds for detecting glossy patches using user-provided values
     lower_gloss = np.array([0, 0, lower_gloss_thresh])
@@ -169,17 +176,19 @@ def process_image(image, lower_gloss_thresh, upper_gloss_thresh):
     result_image = image.copy()
     # Overlay glossy areas in red
     overlay = result_image.copy()
-    overlay[gloss_mask > 0] = [0, 0, 255]  # Red color
+    overlay[gloss_mask > 0] = [0, 0, 255]  # Red color in BGR
     alpha = 0.5  # Transparency factor
     cv2.addWeighted(overlay, alpha, result_image, 1 - alpha, 0, result_image)
 
-    # Encode intermediate images to display
-    _, slab_mask_encoded = cv2.imencode('.jpg', slab_mask)
+    # Convert masks to RGB before encoding
+    slab_mask_rgb = cv2.cvtColor(slab_mask, cv2.COLOR_GRAY2RGB)
+    _, slab_mask_encoded = cv2.imencode('.jpg', slab_mask_rgb)
     slab_mask_bytes = slab_mask_encoded.tobytes()
     slab_mask_base64 = base64.b64encode(slab_mask_bytes).decode('utf-8')
     slab_mask_data = f"data:image/jpeg;base64,{slab_mask_base64}"
 
-    _, gloss_mask_encoded = cv2.imencode('.jpg', gloss_mask)
+    gloss_mask_rgb = cv2.cvtColor(gloss_mask, cv2.COLOR_GRAY2RGB)
+    _, gloss_mask_encoded = cv2.imencode('.jpg', gloss_mask_rgb)
     gloss_mask_bytes = gloss_mask_encoded.tobytes()
     gloss_mask_base64 = base64.b64encode(gloss_mask_bytes).decode('utf-8')
     gloss_mask_data = f"data:image/jpeg;base64,{gloss_mask_base64}"
