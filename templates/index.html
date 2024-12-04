@@ -15,6 +15,7 @@
     </div>
     <div class="container">
         <h1>Welcome to Roof Insights</h1>
+        
         <div class="video-container">
             <form action="/capture" method="post">
                 <div class="controls">
@@ -27,41 +28,83 @@
             </form>
         </div>
         
-            <div class="image-grid">
-                <div class="grid-item">
-                    <h3>Live Video Feed:</h3>
-                    <img src="{{ url_for('video_stream') }}" class="grid-image" />
-                </div>
-                {% if captured_image %}
-                <div class="grid-item">
-                    <h3>Original Image:</h3>
-                    <img src="{{ original_image }}" class="grid-image" />
-                </div>
-                <div class="grid-item">
-                    <h3>Processed Image:</h3>
-                    <img src="{{ captured_image }}" class="grid-image" />
-                </div>
-                <div class="grid-item">
-                    <h3>Slab Segmentation Mask:</h3>
-                    <img src="{{ slab_mask_image }}" class="grid-image" />
-                </div>
-                <div class="grid-item">
-                    <h3>Gloss Mask:</h3>
-                    <img src="{{ gloss_mask_image }}" class="grid-image" />
-                </div>
-                <!-- Optionally add an empty grid item to fill the grid -->
-                <div class="grid-item"></div>
-                {% endif %}
+        <div class="image-grid">
+            <div class="grid-item">
+                <h3>Live Video Feed:</h3>
+                <img src="{{ url_for('video_stream') }}" class="grid-image" onclick="openModal(this.src)" />
             </div>
+            {% if captured_image %}
+            <div class="grid-item">
+                <h3>Original Image:</h3>
+                <img src="{{ original_image }}" class="grid-image" onclick="openModal(this.src)" />
+            </div>
+            <div class="grid-item">
+                <h3>Processed Image:</h3>
+                <img src="{{ captured_image }}" class="grid-image" onclick="openModal(this.src)" />
+            </div>
+            <div class="grid-item">
+                <h3>Slab Segmentation Mask:</h3>
+                <img src="{{ slab_mask_image }}" class="grid-image" onclick="openModal(this.src)" />
+            </div>
+            <div class="grid-item">
+                <h3>Gloss Mask:</h3>
+                <img src="{{ gloss_mask_image }}" class="grid-image" onclick="openModal(this.src)" />
+            </div>
+            <div class="grid-item">
+                <h3>Processed Image 1:</h3>
+                <img src="{{ url_for('processed_image_1_stream') }}" class="grid-image" onclick="openModal(this.src)" />
+            </div>
+            <div class="grid-item">
+                <h3>Processed Image 2:</h3>
+                <img src="{{ url_for('processed_image_2_stream') }}" class="grid-image" onclick="openModal(this.src)" />
+            </div>
+            <!-- Optionally add an empty grid item to fill the grid -->
+            <div class="grid-item"></div>
+            {% endif %}
+        </div>
+
+        <div>
             {% if glossy_percentage is not none %}
                 <p>Glossy Area Percentage: {{ glossy_percentage|round(2) }}%</p>
             {% else %}
                 <p>Glossy Area Percentage: N/A</p>
             {% endif %}
+        </div>
         
+    </div>
+    <!-- Modal Structure -->
+    <div id="imageModal" class="modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImage">
     </div>
     <div class="footer">
         &copy; 2024 Roof Insights. All rights reserved.
     </div>
+    <script>
+        function openModal(src) {
+            var modal = document.getElementById("imageModal");
+            var modalImg = document.getElementById("modalImage");
+            modal.style.display = "block";
+            modalImg.src = src;
+        }
+
+        // Get the modal element
+        var modal = document.getElementById("imageModal");
+
+        // Get the <span> element that closes the modal
+        var span = document.getElementsByClassName("close")[0];
+
+        // When the user clicks on <span> (x), close the modal
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        // Also close the modal when the user clicks anywhere outside the image
+        modal.onclick = function(event) {
+            if (event.target == modal || event.target == modalImg) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
 </body>
 </html>
