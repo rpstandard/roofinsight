@@ -9,14 +9,11 @@ import threading
 import time
 import sys
 import argparse
-#  import torch
-import matplotlib.pyplot as plt
-# import torchvision
 
-from jetson_inference import segNet
-from jetson_utils import videoSource, videoOutput, cudaOverlay, cudaDeviceSynchronize, Log, cudaFromNumpy
+from jetson_inference import backgroundNet
+from jetson_utils import (videoSource, videoOutput, loadImage, Log, cudaFromNumpy, cudaToNumpy,
+                          cudaAllocMapped, cudaMemcpy, cudaResize, cudaOverlay)
 from segnet_utils import *
-# from segment_anything import sam_model_registry, SamAutomaticMaskGenerator, SamPredictor
 
 app = Flask(__name__)
 
@@ -29,25 +26,12 @@ gloss_mask_image = None  # To hold the gloss mask image
 processed_image_1 = None  # New variable for processed image 1
 processed_image_2 = None  # New variable for processed image 2
 image_lock = threading.Lock()
-
-# Add a variable to store the camera source
-camera_source = None  # Will be set based on user's choice
-
-# sam_checkpoint = "sam_vit_h_4b8939.pth"
-# model_type = "vit_h"
-# device = "cuda"
-
-# def load_sam_model(checkpoint, model_type):
-#     # Load the state dictionary with weights_only=True
-#     state_dict = torch.load(checkpoint, weights_only=True)
-#     model = sam_model_registry[model_type]()
-#     model.load_state_dict(state_dict)
-#     return model
-
-# sam = load_sam_model(sam_checkpoint, model_type)
-# sam.to(device=device)
-
-# mask_generator = SamAutomaticMaskGenerator(sam)
+camera_source = None # Add a variable to store the camera source
+img_replacement_scaled = None
+img_output = None
+sheen_percentage = 0.0
+lower_gloss_thresh = 150
+upper_gloss_thresh = 230
 
 def capture_image():
     global latest_image, camera_source
@@ -83,7 +67,7 @@ def capture_image():
                     break
                 with image_lock:
                     latest_image = frame.copy()
-                time.sleep(0.033)  # Approximate 30 FPS
+                time.sleep(1)  # Approximate 30 FPS
         except Exception as e:
             print(f"Error: {e}")
         finally:
@@ -91,8 +75,25 @@ def capture_image():
     else:
         print("Invalid camera source specified")
 
+    time.sleep(1)  # Adjust as needed
+
+def replaceBackground(img_input):
+    # Define solid orange color (RGB)
+    orange_color = (255, 165, 0, 255)  # Red, Green, Blue, Alpha
+    # Create a solid orange image using NumPy
+    orange_np = np.full((img_input.height, img_input.width, 4), orange_color, dtype=np.uint8)
+
+    # Convert NumPy array to CUDA image
+    orange_background_scaled = cudaFromNumpy(orange_np)
+
+    # Overlay the original image onto the orange background
+    img_output = cudaAllocMapped(like=img_input)
+    cudaOverlay(img_input, orange_background_scaled, 0, 0)
+
+    return orange_background_scaled
+
 def process_image_in_thread():
-    global latest_image, processed_image_1, processed_image_2
+    global latest_image, processed_image_1, processed_image_2, sheen_percentage
 
     while True:
         if latest_image is not None:
@@ -100,37 +101,27 @@ def process_image_in_thread():
                 # Copy the latest image to avoid threading issues
                 image_to_process = latest_image.copy()
 
-            # Process the image using your segmentation network
-            # Convert to the format expected by the network
-            img_input = cv2.cvtColor(image_to_process, cv2.COLOR_BGR2RGBA)
-            img_input_cuda = cudaFromNumpy(img_input)
+            # Convert the NumPy image to a CUDA image
+            image_to_process = cv2.cvtColor(image_to_process, cv2.COLOR_BGR2RGBA)
+            cuda_image = cudaFromNumpy(image_to_process)
+            # Perform background removal
+            net.Process(cuda_image, filter="linear")
 
-            # Allocate buffers
-            buffers.Alloc(img_input_cuda.shape, img_input_cuda.format)
+            # Convert CUDA image back to NumPy for display or further processing
+            processed_1 = cudaToNumpy(cuda_image)
+            processed_1_final = cv2.cvtColor(processed_1, cv2.COLOR_RGBA2BGR)
+            processed_image_1 = processed_1_final.copy()  # Store processed image 2
 
-            # Process the segmentation network
-            net.Process(img_input_cuda, ignore_class=args.ignore_class)
+            # Perform background replacement
+            img_output = replaceBackground(cuda_image)
+            
+            # Convert CUDA image back to NumPy for display or further processing
+            processed_2 = cudaToNumpy(img_output)
+            processed_2_final = cv2.cvtColor(processed_2, cv2.COLOR_RGBA2BGR)
+            processed_image_2 = processed_2_final.copy()
 
-            # Generate the overlay
-            if buffers.overlay:
-                net.Overlay(buffers.overlay, filter_mode=args.filter_mode)
-
-            # Generate the mask
-            if buffers.mask:
-                net.Mask(buffers.mask, filter_mode=args.filter_mode)
-
-            # Convert CUDA images to NumPy arrays
-            if buffers.overlay:
-                overlay_image = cudaToNumpy(buffers.overlay)
-                overlay_image = cv2.cvtColor(overlay_image, cv2.COLOR_RGBA2BGR)
-                with image_lock:
-                    processed_image_1 = overlay_image.copy()  # Store processed image 1
-
-            if buffers.mask:
-                mask_image = cudaToNumpy(buffers.mask)
-                mask_image = cv2.cvtColor(mask_image, cv2.COLOR_RGBA2BGR)
-                with image_lock:
-                    processed_image_2 = mask_image.copy()  # Store processed image 2
+            # Calculate sheen percentage from processed_image_1
+            sheen_percentage = calculate_sheen_percentage(processed_image_1)
 
         time.sleep(1)  # Adjust as needed
 
@@ -139,24 +130,11 @@ def index():
     return render_template('index.html',
                            captured_image=captured_image,
                            glossy_percentage=glossy_percentage,
+                           sheen_percentage=sheen_percentage,
                            slab_mask_image=slab_mask_image,
                            gloss_mask_image=gloss_mask_image,
-                           lower_gloss_thresh=200,
-                           upper_gloss_thresh=255)
-def show_anns(anns):
-    if len(anns) == 0:
-        return
-    sorted_anns = sorted(anns, key=(lambda x: x['area']), reverse=True)
-    ax = plt.gca()
-    ax.set_autoscale_on(False)
-
-    img = np.ones((sorted_anns[0]['segmentation'].shape[0], sorted_anns[0]['segmentation'].shape[1], 4))
-    img[:,:,3] = 0
-    for ann in sorted_anns:
-        m = ann['segmentation']
-        color_mask = np.concatenate([np.random.random(3), [0.35]])
-        img[m] = color_mask
-    ax.imshow(img)
+                           lower_gloss_thresh=lower_gloss_thresh,
+                           upper_gloss_thresh=upper_gloss_thresh)
 
 def generate():
     global latest_image
@@ -194,16 +172,13 @@ def video_stream():
 
 @app.route('/capture', methods=['GET', 'POST'])
 def capture():
-    global latest_image, captured_image, glossy_percentage, slab_mask_image, gloss_mask_image
+    global latest_image, captured_image, glossy_percentage, slab_mask_image, gloss_mask_image, sheen_percentage
+    global lower_gloss_thresh, upper_gloss_thresh
 
     if request.method == 'POST':
         # Get threshold values from the form
         lower_gloss_thresh = int(request.form.get('lower_gloss_thresh', 200))
         upper_gloss_thresh = int(request.form.get('upper_gloss_thresh', 255))
-    else:
-        # Default threshold values
-        lower_gloss_thresh = 200
-        upper_gloss_thresh = 255
 
     if latest_image is not None:
         # Process the image with the provided thresholds
@@ -232,6 +207,7 @@ def capture():
                            original_image=original_image,
                            captured_image=captured_image,
                            glossy_percentage=glossy_percentage,
+                           sheen_percentage=sheen_percentage,
                            slab_mask_image=slab_mask_image,
                            gloss_mask_image=gloss_mask_image,
                            lower_gloss_thresh=lower_gloss_thresh,
@@ -303,33 +279,73 @@ def process_image(image, lower_gloss_thresh, upper_gloss_thresh):
 
     return result_image, glossy_percentage, slab_mask_data, gloss_mask_data
 
+def calculate_sheen_percentage(image):
+    global processed_image_3, processed_image_4, lower_gloss_thresh, upper_gloss_thresh
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Apply Gaussian Blur
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    processed_image_3 = blurred.copy()  # Store processed image 3
+
+    # Threshold to identify shiny areas
+    _, thresh = cv2.threshold(blurred, lower_gloss_thresh, upper_gloss_thresh, cv2.THRESH_BINARY)
+    processed_image_4 = thresh.copy()  # Store processed image 4
+
+    # Calculate percentage of sheen
+    sheen_pixels = cv2.countNonZero(thresh)
+    total_pixels = image.shape[0] * image.shape[1]
+    percentage = (sheen_pixels / total_pixels) * 100
+    return percentage
+
 @app.route('/processed_image_1_stream')
 def processed_image_1_stream():
     def generate():
-        while True:
-            if processed_image_1 is not None:
-                with image_lock:
-                    ret, jpeg = cv2.imencode('.jpg', processed_image_1)
-                if ret:
-                    frame = jpeg.tobytes()
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-            time.sleep(0.1)
+        if processed_image_1 is not None:
+            with image_lock:
+                ret, jpeg = cv2.imencode('.jpg', processed_image_1)
+            if ret:
+                frame = jpeg.tobytes()
+                yield (b'--frame\r\n'
+                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
     return Response(generate(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/processed_image_2_stream')
 def processed_image_2_stream():
     def generate():
-        while True:
-            if processed_image_2 is not None:
-                with image_lock:
-                    ret, jpeg = cv2.imencode('.jpg', processed_image_2)
-                if ret:
-                    frame = jpeg.tobytes()
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-            time.sleep(0.1)
+        if processed_image_2 is not None:
+            with image_lock:
+                ret, jpeg = cv2.imencode('.jpg', processed_image_2)
+            if ret:
+                frame = jpeg.tobytes()
+                yield (b'--frame\r\n'
+                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+    return Response(generate(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/processed_image_3_stream')
+def processed_image_3_stream():
+    def generate():
+        if processed_image_3 is not None:
+            with image_lock:
+                ret, jpeg = cv2.imencode('.jpg', processed_image_3)
+            if ret:
+                frame = jpeg.tobytes()
+                yield (b'--frame\r\n'
+                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+    return Response(generate(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/processed_image_4_stream')
+def processed_image_4_stream():
+    def generate():
+        if processed_image_4 is not None:
+            with image_lock:
+                ret, jpeg = cv2.imencode('.jpg', processed_image_4)
+            if ret:
+                frame = jpeg.tobytes()
+                yield (b'--frame\r\n'
+                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
     return Response(generate(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
@@ -338,7 +354,7 @@ if __name__ == '__main__':
     # parse the command line
     parser = argparse.ArgumentParser(description="Segment a live camera stream using an semantic segmentation DNN.", 
                                     formatter_class=argparse.RawTextHelpFormatter, 
-                                    epilog=segNet.Usage() + videoSource.Usage() + videoOutput.Usage() + Log.Usage())
+                                    epilog=backgroundNet.Usage() + videoSource.Usage() + videoOutput.Usage() + Log.Usage())
 
     parser.add_argument("input", type=str, default="", nargs='?', help="URI of the input stream")
     parser.add_argument("output", type=str, default="", nargs='?', help="URI of the output stream")
@@ -357,26 +373,11 @@ if __name__ == '__main__':
         sys.exit(0)
 
     camera_source = args.camera  # Set the camera source based on the argument
-    
-    # load the segmentation network
-    net = segNet(args.network, sys.argv)
 
-    # note: to hard-code the paths to load a model, the following API can be used:
-    #
-    # net = segNet(model="model/fcn_resnet18.onnx", labels="model/labels.txt", colors="model/colors.txt",
-    #              input_blob="input_0", output_blob="output_0")
-
-    # set the alpha blending value
-    net.SetOverlayAlpha(args.alpha)
-
-    # create video output
-    output = videoOutput(args.output, argv=sys.argv)
-
-    # create buffer manager
-    buffers = segmentationBuffers(net, args)
-
-    # create video source
+    # load the background removal network
+    net = backgroundNet(args.network, sys.argv)
     input = videoSource(args.input, argv=sys.argv)
+    output = videoOutput(args.output, argv=sys.argv)
 
     # Start the image capture thread
     capture_thread = threading.Thread(target=capture_image)

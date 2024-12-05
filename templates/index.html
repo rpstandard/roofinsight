@@ -39,7 +39,7 @@
                 <img src="{{ original_image }}" class="grid-image" onclick="openModal(this.src)" />
             </div>
             <div class="grid-item">
-                <h3>Processed Image:</h3>
+                <h3>Gloss location in entire image:</h3>
                 <img src="{{ captured_image }}" class="grid-image" onclick="openModal(this.src)" />
             </div>
             <div class="grid-item">
@@ -51,21 +51,27 @@
                 <img src="{{ gloss_mask_image }}" class="grid-image" onclick="openModal(this.src)" />
             </div>
             <div class="grid-item">
-                <h3>Processed Image 1:</h3>
+                <h3>Segmented Shingle:</h3>
                 <img src="{{ url_for('processed_image_1_stream') }}" class="grid-image" onclick="openModal(this.src)" />
             </div>
             <div class="grid-item">
-                <h3>Processed Image 2:</h3>
+                <h3>Shingle with BG:</h3>
                 <img src="{{ url_for('processed_image_2_stream') }}" class="grid-image" onclick="openModal(this.src)" />
             </div>
-            <!-- Optionally add an empty grid item to fill the grid -->
-            <div class="grid-item"></div>
+            <div class="grid-item">
+                <h3>Blurred image</h3>
+                <img src="{{ url_for('processed_image_3_stream') }}" class="grid-image" onclick="openModal(this.src)" />
+            </div>
+            <div class="grid-item">
+                <h3>Sheen spots:</h3>
+                <img src="{{ url_for('processed_image_4_stream') }}" class="grid-image" onclick="openModal(this.src)" />
+            </div>
             {% endif %}
         </div>
 
         <div>
-            {% if glossy_percentage is not none %}
-                <p>Glossy Area Percentage: {{ glossy_percentage|round(2) }}%</p>
+            {% if sheen_percentage is not none %}
+                <p>Glossy Area Percentage: {{ sheen_percentage|round(2) }}%</p>
             {% else %}
                 <p>Glossy Area Percentage: N/A</p>
             {% endif %}
