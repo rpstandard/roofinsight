@@ -23,6 +23,14 @@
                     <input type="number" id="lower_gloss_thresh" name="lower_gloss_thresh" value="{{ lower_gloss_thresh }}" min="0" max="255">
                     <label for="upper_gloss_thresh">Upper Gloss Threshold:</label>
                     <input type="number" id="upper_gloss_thresh" name="upper_gloss_thresh" value="{{ upper_gloss_thresh }}" min="0" max="255">
+                    
+                    <!-- New Dropdown for Model Selection -->
+                    <label for="model_selection">Select Model:</label>
+                    <select id="model_selection" name="model_selection">
+                        <option value="model_a" {% if not switch_model %}selected{% endif %}>Model A</option>
+                        <option value="model_b" {% if switch_model %}selected{% endif %}>Model B</option>
+                    </select>
+
                     <button type="submit" class="btn">Capture Image</button>
                 </div>
             </form>
@@ -42,30 +50,30 @@
                 <h3>Gloss location in entire image:</h3>
                 <img src="{{ captured_image }}" class="grid-image" onclick="openModal(this.src)" />
             </div>
-            <div class="grid-item">
+            <!-- <div class="grid-item">
                 <h3>Slab Segmentation Mask:</h3>
                 <img src="{{ slab_mask_image }}" class="grid-image" onclick="openModal(this.src)" />
             </div>
             <div class="grid-item">
                 <h3>Gloss Mask:</h3>
                 <img src="{{ gloss_mask_image }}" class="grid-image" onclick="openModal(this.src)" />
-            </div>
+            </div> -->
             <div class="grid-item">
                 <h3>Segmented Shingle:</h3>
                 <img src="{{ url_for('processed_image_1_stream') }}" class="grid-image" onclick="openModal(this.src)" />
             </div>
             <div class="grid-item">
-                <h3>Shingle with BG:</h3>
+                <h3>Shingle with Sheen Markings</h3>
                 <img src="{{ url_for('processed_image_2_stream') }}" class="grid-image" onclick="openModal(this.src)" />
             </div>
             <div class="grid-item">
-                <h3>Blurred image</h3>
+                <h3>Grayscale image</h3>
                 <img src="{{ url_for('processed_image_3_stream') }}" class="grid-image" onclick="openModal(this.src)" />
             </div>
-            <div class="grid-item">
-                <h3>Sheen spots:</h3>
+            <!-- <div class="grid-item">
+                <h3>CV Sheen spots:</h3>
                 <img src="{{ url_for('processed_image_4_stream') }}" class="grid-image" onclick="openModal(this.src)" />
-            </div>
+            </div> -->
             {% endif %}
         </div>
 
