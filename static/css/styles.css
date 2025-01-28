@@ -6,7 +6,8 @@ body {
 }
 
 .container {
-    width: 80%;
+    width: 100%;
+    max-width: 1200px;
     margin: 0 auto;
     text-align: center;
 }
@@ -160,4 +161,94 @@ button:hover {
     color: #bbbbbb;
     text-decoration: none;
     cursor: pointer;
+}
+
+/* Top Controls */
+.top-controls {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.top-controls .controls {
+    display: flex;
+    align-items: center;
+}
+
+.top-controls label {
+    margin-left: 20px;
+    margin-right: 10px;
+}
+
+.top-controls select {
+    padding: 5px;
+    font-size: 16px;
+}
+
+/* Main Content Grid */
+.main-grid {
+    display: flex;
+    margin-top: 20px;
+}
+
+/* Left Side */
+.left-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.image-item {
+    width: 100%;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.image-item img {
+    width: 80%; /* Adjust as needed */
+    height: auto;
+    border: 1px solid #ccc;
+    cursor: pointer;
+}
+
+/* Right Side */
+.right-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.bar-item {
+    width: 80%;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.progress-bar {
+    width: 100%;
+    background-color: #f1f1f1;
+    border-radius: 25px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+
+.progress {
+    height: 30px;
+    background-color: #4caf50;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .main-grid {
+        flex-direction: column;
+    }
+    .left-side, .right-side {
+        width: 100%;
+    }
+    .image-item img, .bar-item {
+        width: 100%;
+    }
 }
