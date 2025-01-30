@@ -22,13 +22,10 @@ endpoint_id = "a7f224da-618e-44d3-8bf7-90132df1d6c2"
 api_key = "land_sk_2rHJ96g1xDsTML3fkwwtHGY7ffnR4aPI1Xrw9RvKtC23UjklA5"
 
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 # Global variables
 latest_image = None
-captured_image = None
-glossy_percentage = None
-slab_mask_image = None  # To hold the slab mask image
-gloss_mask_image = None  # To hold the gloss mask image
 processed_image_1 = None  # New variable for processed image 1
 processed_image_2 = None  # New variable for processed image 2
 similarity_score = 100  # Initialize with 100%
@@ -37,11 +34,7 @@ previous_sheen_percentage = None
 
 image_lock = threading.Lock()
 camera_source = None # Add a variable to store the camera source
-img_replacement_scaled = None
-img_output = None
 sheen_percentage = 0.0
-lower_gloss_thresh = 150
-upper_gloss_thresh = 230
 predictor_c = None
 new_capture = False
 switch_model = False
@@ -136,7 +129,8 @@ def process_image_in_thread():
             image_wo_background_noalpha = cv2.cvtColor(image_wo_background, cv2.COLOR_BGRA2RGB)
 
             if new_capture:
-                predictions = run_inference(image_wo_background_noalpha)
+                predictions = None
+                # predictions = run_inference(image_wo_background_noalpha)
                 if predictions:
                     
                     # Initialize variables
@@ -254,8 +248,7 @@ def capture():
 
 
 def calculate_sheen_percentage(image):
-    global previous_sheen_percentage, similarity_score
-    global lower_gloss_thresh, upper_gloss_thresh, total_sheen_area
+    global previous_sheen_percentage, similarity_score, total_sheen_area
     
     total_pixels = image.shape[0] * image.shape[1]
     percentage = (total_sheen_area / total_pixels) * 100

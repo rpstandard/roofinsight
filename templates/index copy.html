@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roof Insights</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <div class="title">Roof Insights</div>
+        <div class="links">
+            <a href="/">Home</a>
+        </div>
+    </div>
+    <div class="container">
+        <!-- Top Full-Width Grid -->
+        <div class="top-controls">
+            <form action="/capture" method="post">
+                <div class="controls">
+                    <!-- Capture Button -->
+                    <button type="submit" class="btn">Capture Image</button>
+                    <!-- Model Selection Dropdown -->
+                    <label for="model_selection">Select Model:</label>
+                    <select id="model_selection" name="model_selection">
+                        <option value="model_a" {% if not switch_model %}selected{% endif %}>Model A</option>
+                        <option value="model_b" {% if switch_model %}selected{% endif %}>Model B</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="main-grid">
+            <!-- Left Side -->
+            <div class="left-side">
+                <div class="image-item">
+                    <h3>Live Video Feed</h3>
+                    <img src="{{ url_for('video_stream') }}" class="grid-image" onclick="openModal(this.src)" />
+                </div>
+                <div class="image-item">
+                    <h3>Segmented Image with Sheen Spots</h3>
+                    <img src="{{ url_for('processed_image_2_stream') }}" class="grid-image" onclick="openModal(this.src)" />
+                </div>
+            </div>
+            <!-- Right Side -->
+            <div class="right-side">
+                <div class="bar-item">
+                    <h3>Similarity Score Compared to Previous</h3>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: {{ similarity_score }}%"></div>
+                    </div>
+                    <p>{{ similarity_score }}%</p>
+                </div>
+                <div class="bar-item">
+                    <h3>Sheen Percentage for Current Image</h3>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: {{ sheen_percentage }}%"></div>
+                    </div>
+                    <p>{{ sheen_percentage }}%</p>
+                </div>
+                <div class="bar-item">
+                    <h3>Distribution Percentage of Sheen</h3>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: {{ distribution_percentage }}%"></div>
+                    </div>
+                    <p>{{ distribution_percentage }}%</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Structure -->
+        <div id="imageModal" class="modal">
+            <span class="close">&times;</span>
+            <img class="modal-content" id="modalImage">
+        </div>
+
+        <div class="footer">
+            &copy; 2024 Roof Insights. All rights reserved.
+        </div>
+
+        <!-- JavaScript for Modal -->
+        <script>
+            function openModal(src) {
+                var modal = document.getElementById("imageModal");
+                var modalImg = document.getElementById("modalImage");
+                modal.style.display = "block";
+                modalImg.src = src;
+            }
+
+            // Get the modal element
+            var modal = document.getElementById("imageModal");
+
+            // Get the <span> element that closes the modal
+            var span = document.getElementsByClassName("close")[0];
+
+            // When the user clicks on <span> (x), close the modal
+            span.onclick = function() {
+                modal.style.display = "none";
+            }
+
+            // Also close the modal when the user clicks anywhere outside the image
+            modal.onclick = function(event) {
+                if (event.target == modal || event.target == modalImg) {
+                    modal.style.display = "none";
+                }
+            }
+        </script>
+    </div>
+</body>
+</html>
