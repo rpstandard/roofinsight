@@ -9,6 +9,8 @@ import threading
 import time
 import sys
 import argparse
+import os
+from datetime import datetime
 
 from jetson_inference import backgroundNet
 from jetson_utils import (videoSource, videoOutput, loadImage, Log, cudaFromNumpy, cudaToNumpy,
@@ -18,19 +20,26 @@ from landingai.predict import Predictor
 from scipy.spatial.distance import pdist
 
 # Enter your API Key
-endpoint_id = "a7f224da-618e-44d3-8bf7-90132df1d6c2"
+endpoint_id = "9346ab6c-1938-4b87-ac42-f698d7ee0eda" # "a7f224da-618e-44d3-8bf7-90132df1d6c2"
 api_key = "land_sk_2rHJ96g1xDsTML3fkwwtHGY7ffnR4aPI1Xrw9RvKtC23UjklA5"
 
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
+
+# Directory to save images
+SAVE_DIR = '/home/roofinsights/workspace/roofinsight/shingle_images'
+os.makedirs(SAVE_DIR, exist_ok=True)
 
 # Global variables
 latest_image = None
 processed_image_1 = None  # New variable for processed image 1
 processed_image_2 = None  # New variable for processed image 2
 similarity_score = 100  # Initialize with 100%
-distribution_percentage = 0.0
+distribution_score = 0.0
 previous_sheen_percentage = None
+count_score = 0
+pixel_count_shingle = 0
+
 
 image_lock = threading.Lock()
 camera_source = None # Add a variable to store the camera source
@@ -40,6 +49,8 @@ new_capture = False
 switch_model = False
 current_model = False
 total_sheen_area = 0
+shingle_analysis_dst = None
+last_10_files = []
 
 def run_inference(image):
     global predictor_c, api_key, switch_model, current_model
@@ -57,7 +68,7 @@ def run_inference(image):
             if switch_model:
                 endpoint_id = "84f11d29-7e8c-417f-97af-9c11342e0c49"
             else:
-                endpoint_id = "a7f224da-618e-44d3-8bf7-90132df1d6c2"
+                endpoint_id = "9346ab6c-1938-4b87-ac42-f698d7ee0eda"
             predictor_c = Predictor(endpoint_id, api_key=api_key)
             current_model = switch_model
         
@@ -110,8 +121,8 @@ def capture_image():
         print("Invalid camera source specified")
 
 def process_image_in_thread():
-    global latest_image, processed_image_1, processed_image_2, sheen_percentage, new_capture
-    global total_sheen_area, distribution_percentage
+    global latest_image, processed_image_1, processed_image_2, sheen_percentage, new_capture, pixel_count_shingle
+    global total_sheen_area, distribution_score, shingle_analysis_dst, last_10_files, count_score
 
     while True:
         if latest_image is not None:
@@ -130,13 +141,13 @@ def process_image_in_thread():
 
             if new_capture:
                 predictions = None
-                # predictions = run_inference(image_wo_background_noalpha)
+                predictions = run_inference(image_wo_background_noalpha)
                 if predictions:
                     
                     # Initialize variables
                     total_sheen_area = 0
                     bbox_centers = []
-
+                    count_score = len(predictions)
                     for obj in predictions:
                         label = obj.label_name
                         confidence = obj.score
@@ -155,9 +166,9 @@ def process_image_in_thread():
                         cv2.rectangle(image_wo_background_noalpha, (x1, y1), (x2, y2), (0, 0, 255), 4)
 
                         # Optionally, add label and confidence
-                        text = f"{label}: {confidence:.2f}"
+                        text = f"*{confidence:.2f}"
                         cv2.putText(image_wo_background_noalpha, text, (x1, y1 - 10),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 4)
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 4)
 
                     # Calculate distribution percentage based on spatial spread
                     if len(bbox_centers) > 1:
@@ -177,21 +188,51 @@ def process_image_in_thread():
                         normalized_distance = avg_distance / image_diagonal
 
                         # Calculate distribution percentage (scaled to 0-100)
-                        distribution_percentage = normalized_distance * 100
+                        distribution_score = normalized_distance * 100
                     else:
                         # If only one bounding box, set distribution to minimal value
-                        distribution_percentage = 0
+                        distribution_score = 0
 
                 else:
                     # If no predictions, set distribution percentage to zero
-                    distribution_percentage = 0
+                    distribution_score = 0
                     total_sheen_area = 0
+                    count_score = 0
 
                 processed_image_2 = image_wo_background_noalpha.copy()
+                tmp = cv2.cvtColor(processed_image_2, cv2.COLOR_BGR2GRAY)
+                _,alpha = cv2.threshold(tmp,0,255,cv2.THRESH_BINARY)
+                pixel_count_shingle = cv2.countNonZero(alpha)
+                b, g, r = cv2.split(processed_image_2)
+                rgba = [b,g,r, alpha]
+                shingle_analysis_dst = cv2.merge(rgba,4)
+                success, png = cv2.imencode('.png', shingle_analysis_dst.copy())
+                if success:
+                    frame = png.tobytes()
+                    # Save the image with UTC time and date
+                    utc_now = datetime.now()
+                    date_str = utc_now.strftime('%Y%m%d')
+                    time_str = utc_now.strftime('%H%M%S')
+                    date_dir = os.path.join(SAVE_DIR, date_str)
+                    os.makedirs(date_dir, exist_ok=True)
+                    filename = os.path.join(date_dir, f'shingle_{time_str}.png')
+                    with open(filename, 'wb') as f:
+                        f.write(frame)
+
+                # Get list of files in the directory
+                files = []
+                for date_dir in os.listdir(SAVE_DIR):
+                    date_path = os.path.join(SAVE_DIR, date_dir)
+                    if os.path.isdir(date_path):
+                        files.extend([os.path.join(date_path, f) for f in os.listdir(date_path) if f.endswith('.png')])
+                # Sort files by modification time
+                files.sort(key=os.path.getmtime, reverse=True)
+                # Get the last 10 files
+                last_10_files = files[:4]
                 new_capture = False
 
-            # Calculate sheen percentage from processed_image_1
-            sheen_percentage = calculate_sheen_percentage(latest_image)
+                # Calculate sheen percentage from processed_image_1
+                sheen_percentage = calculate_sheen_percentage(shingle_analysis_dst)
 
         time.sleep(1)  # Adjust as needed
 
@@ -202,7 +243,9 @@ def index():
                            processed_image_2=processed_image_2,
                            switch_model=switch_model,
                            similarity_score=round(similarity_score, 2),
-                           distribution_percentage=round(distribution_percentage, 2))
+                           distribution_score=round(distribution_score*5, 2),
+                           last_images=last_10_files,
+                           num_patches=count_score)
 
 def generate():
     global latest_image
@@ -244,14 +287,16 @@ def capture():
                            processed_image_2=processed_image_2,
                            switch_model=switch_model,  # Pass to template
                            similarity_score=round(similarity_score, 2),
-                           distribution_percentage=round(distribution_percentage, 2))
+                           distribution_score=round(distribution_score*5, 2),
+                           last_images=last_10_files,
+                           num_patches=count_score)
 
 
 def calculate_sheen_percentage(image):
-    global previous_sheen_percentage, similarity_score, total_sheen_area
+    global previous_sheen_percentage, similarity_score, total_sheen_area, pixel_count_shingle
     
-    total_pixels = image.shape[0] * image.shape[1]
-    percentage = (total_sheen_area / total_pixels) * 100
+    total_pixels = pixel_count_shingle
+    percentage = ((total_sheen_area*4 / total_pixels) * 100) if total_pixels != 0 else 0
 
     # Calculate similarity score
     if previous_sheen_percentage is not None:
@@ -264,30 +309,18 @@ def calculate_sheen_percentage(image):
     return percentage
 
 
-# @app.route('/processed_image_2_stream')
-# def processed_image_2_stream():
-#     def generate():
-#         if processed_image_2 is not None:
-#             with image_lock:
-#                 ret, jpeg = cv2.imencode('.jpg', processed_image_2)
-#             if ret:
-#                 frame = jpeg.tobytes()
-#                 yield (b'--frame\r\n'
-#                         b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-#     return Response(generate(),
-#                     mimetype='multipart/x-mixed-replace; boundary=frame')
-
 @app.route('/processed_image_2_stream')
 def processed_image_2_stream():
     def generate():
         while True:
             with image_lock:
                 if processed_image_2 is not None:
-                    success, jpeg = cv2.imencode('.jpg', processed_image_2.copy())
+                    success, png = cv2.imencode('.png', shingle_analysis_dst.copy())
                     if success:
-                        frame = jpeg.tobytes()
+                        frame = png.tobytes()
                         yield (b'--frame\r\n'
-                               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+                               b'Content-Type: image/png\r\n\r\n' + frame + b'\r\n\r\n')
+                    
             # Control the refresh rate (e.g., 1 second):
             time.sleep(2)
     return Response(generate(),
@@ -339,7 +372,7 @@ if __name__ == '__main__':
     if switch_model:
         endpoint_id = "84f11d29-7e8c-417f-97af-9c11342e0c49"
     else:
-        endpoint_id = "a7f224da-618e-44d3-8bf7-90132df1d6c2"
+        endpoint_id = "9346ab6c-1938-4b87-ac42-f698d7ee0eda"
         
     predictor_c = Predictor(endpoint_id, api_key=api_key)
 

@@ -7,42 +7,30 @@
     <title>Roof Insights</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/design.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/charts.min.css') }}">
 </head>
 
 <body class="bg-gray-100 flex flex-col h-screen">
-    <header class="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
-        <div class="mx-auto px-4 py-6 sm:px-6 sm:py-6 lg:px-8">
-            <div class="flex flex-col items-start gap-2 md:flex-row md:items-center md:justify-between">
-                <!-- <span class="text-lg font-semibold">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="RoofInsights Logo" class="h-20">
-                </span> -->
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl dark:text-white">RoofInsights 1.0</h1>
-                    <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
-                        Quality Check System for Roofing Shingles
-                    </p>
-                </div>
-
-                <div class="flex items-center gap-4">
-                    <button
-                        class="inline-block rounded bg-red-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring"
-                        type="button">
-                        Contact Support
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
-
     <!-- Main container -->
     <div class="flex flex-1 h-screen">
         <!-- Sidebar -->
         <aside class="bg-gray-900 text-white w-96 flex flex-col h-full">
+            <a href="/">
+            <div class="p-4 mt-4">
+                <h1 class="text-2xl font-bold text-white">RoofInsights 1.0</h1>
+                <p class="mt-1.5 text-sm text-gray-400">
+                    Quality Check System for Roofing Shingles
+                </p>
+            </div>
+            </a>
+
             <!-- Video / Toggle switch -->
             <div class="p-4 flex flex-col items-center space-y-2">
                 <!-- Placeholder for live video feed -->
-                <div class="w-full bg-gray-700 flex items-center justify-center mb-2 border border-white rounded-2xl">
-                    <img src="{{ url_for('video_stream') }}" class="grid-image rounded-2xl" onclick="openModal(this.src)" />
+                <div
+                    class="w-full bg-gray-700 flex items-center justify-center mb-2 border border-gray-600 rounded-2xl h-60">
+                    <img src="{{ url_for('video_stream') }}" class="grid-image rounded-2xl"
+                        onclick="openModal(this.src)" />
                 </div>
                 <!-- Live video label + toggle -->
                 <div class="mt-4 flex items-center space-x-6">
@@ -51,26 +39,35 @@
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" class="sr-only peer" checked>
                         <div class="w-17 h-10 bg-red-600 rounded-full peer-checked:bg-gray-600 transition-colors"></div>
-                        <div class="absolute left-0.5 w-8 h-8 bg-white border border-gray-300 rounded-full transition-transform peer-checked:translate-x-8"></div>
+                        <div
+                            class="absolute left-0.5 w-8 h-8 bg-white border border-gray-300 rounded-full transition-transform peer-checked:translate-x-8">
+                        </div>
                     </label>
                 </div>
             </div>
 
             <!-- Capture Image Button and Model Selection -->
-            <div class="mt-4">
-                <form action="/capture" method="post">
-                    <div class="controls">
-                        <!-- Capture Button -->
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Capture Image</button>
+
+            <form action="/capture" method="post">
+                <div class="p-4 mt-4 flex items-center justify-between">
+                    <div class="p-4">
                         <!-- Model Selection Dropdown -->
-                        <label for="model_selection" class="ml-4">Select Model:</label>
-                        <select id="model_selection" name="model_selection" class="ml-2 py-2 px-4 rounded">
+                        <label for="model_selection" class="ml-4">Select Model</label>
+                        <select id="model_selection" name="model_selection"
+                            class="py-2 px-4 rounded bg-white text-gray-900">
                             <option value="model_a" {% if not switch_model %}selected{% endif %}>Model A</option>
                             <option value="model_b" {% if switch_model %}selected{% endif %}>Model B</option>
                         </select>
                     </div>
-                </form>
-            </div>
+                    <div class="p-4">
+                        <!-- Capture Button -->
+                        <button type="submit"
+                            class="h-32 w-48 self-center justify-center bg-gray-600 hover:bg-red-900 text-white font-bold py-2 px-4 rounded">Capture
+                            Image</button>
+                    </div>
+                </div>
+            </form>
+
 
             <!-- Nav Menu -->
             <nav class="mt-auto mb-4">
@@ -79,8 +76,10 @@
                     <li class="flex items-center">
                         <a href="#"
                             class="flex items-center w-full px-4 py-3 bg-red-900 hover:bg-red-600 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6 mr-2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="h-6 w-6 mr-2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                             </svg>
                             Dashboard
                         </a>
@@ -88,41 +87,55 @@
                     <li class="flex items-center">
                         <a href="#"
                             class="flex items-center w-full px-4 py-3 bg-gray-900 hover:bg-red-600 selection:bg-red-600 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6 mr-2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
-                              </svg>                              
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="h-6 w-6 mr-2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                            </svg>
                             Analytics
                         </a>
                     </li>
                     <li class="flex items-center">
                         <a href="#"
                             class="flex items-center w-full px-4 py-3 bg-gray-900 hover:bg-red-600 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6 mr-2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                            </svg>                              
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="h-6 w-6 mr-2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            </svg>
                             Settings
                         </a>
                     </li>
                 </ul>
             </nav>
+            <div class="p-4 mt-4">
+                <button
+                    class="inline-block rounded bg-red-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring"
+                    type="button">
+                    Contact Support
+                </button>
+            </div>
         </aside>
         <!-- Main content -->
         <main class="flex-1 p-6">
             <!-- Top Bar -->
             <div class="flex items-center justify-between mb-6">
                 <!-- Dashboard Title -->
-                <h1 class="text-2xl font-semibold">Dashboard</h1>
+                <h1 class="text-2xl font-semibold">Dashboard for Sheen Detection</h1>
                 <!-- User Profile -->
                 <div class="flex items-center space-x-3">
                     <div class="relative">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
                         </svg>
                     </div>
                     <div>
                         <h2 class="text-lg font-semibold">Ennis Plant</h2>
-                        <span class="text-sm text-gray-500">Admin</span>    
+                        <span class="text-sm text-gray-500">Admin</span>
                     </div>
                 </div>
             </div>
@@ -134,18 +147,84 @@
                     <h2 class="text-lg font-semibold mb-2">Shingle Analysis</h2>
                     <div class="border rounded-lg overflow-hidden">
                         <!-- Placeholder for an actual image -->
-                        <img src="{{ url_for('processed_image_2_stream') }}" class="object-cover w-full h-full" onclick="openModal(this.src)" />
+                        <img src="{{ url_for('processed_image_2_stream') }}" class="object-cover w-full h-160"
+                            onclick="openModal(this.src)" />
                     </div>
                 </div>
 
                 <!-- Result Card -->
-                <div class="col-span-1 bg-white p-4 rounded-lg shadow flex flex-col justify-center items-center">
+                <div class="col-span-1 bg-white p-4 rounded-lg shadow">
                     <h2 class="text-lg font-semibold mb-2">Result</h2>
                     <!-- Gradient box -->
-                    <div class="flex items-center justify-center w-full h-full rounded-md 
-                   bg-gradient-to-r from-yellow-400 to-orange-500">
-                        <span class="text-xl font-bold text-black">Needs<br />Attention</span>
+                    {% if sheen_percentage > 4 %}
+                    <div class="flex items-center justify-center w-full h-48 rounded-md bg-gradient-to-r from-red-600 to-red-700">
+                        <span class="text-4xl font-bold text-white">Severe<br />Sheen</span>
                     </div>
+                    {% elif sheen_percentage > 2 %}
+                    <div class="flex items-center justify-center w-full h-48 rounded-md bg-gradient-to-r from-orange-400 to-orange-500">
+                        <span class="text-4xl font-bold text-black">Moderate<br />Sheen</span>
+                    </div>
+                    {% elif sheen_percentage > 0.5 %}
+                    <div class="flex items-center justify-center w-full h-48 rounded-md bg-gradient-to-r from-yellow-300 to-yellow-400">
+                        <span class="text-4xl font-bold text-black">Slight<br />Sheen</span>
+                    </div>
+                    {% else %}
+                    <div class="flex items-center justify-center w-full h-48 rounded-md bg-gradient-to-r from-green-400 to-green-500">
+                        <span class="text-4xl font-bold text-black">Uniform<br />Sheen</span>
+                    </div>
+                    {% endif %}
+                    
+                    <section class="py-4 grid grid-cols-1 gap-x-6">
+                        <div class="flex items-center py-3">
+                            <div class="space-y-3 flex-1">
+                                <div class="flex items-center">
+                                    <h4 class="font-medium text-sm mr-auto text-gray-700 flex items-center">
+                                        Count:
+                                    </h4>
+                                    <span class="px-2 py-1 rounded-lg bg-gray-200 text-gray-900 text-lg">
+                                        {{ num_patches }} / 10
+                                    </span>
+                                </div>
+                                <div class="overflow-hidden bg-gray-200 h-4 rounded-full w-full">
+                                    <span class="h-full bg-gray-900 w-full block rounded-full"
+                                        style="width:{{num_patches*10}}%"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center py-3">
+                            <div class="space-y-3 flex-1">
+                                <div class="flex items-center">
+                                    <h4 class="font-medium text-sm mr-auto text-gray-700 flex items-center">
+                                        Distribution:
+                                    </h4>
+                                    <span class="px-2 py-1 rounded-lg bg-gray-200 text-gray-900 text-lg">
+                                        {{ distribution_score }} %
+                                    </span>
+                                </div>
+                                <div class="overflow-hidden bg-gray-200 h-4 rounded-full w-full">
+                                    <span class="h-full bg-gray-900 w-full block rounded-full"
+                                        style="width:{{distribution_score}}%"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center py-3">
+                            <div class="space-y-3 flex-1">
+                                <div class="flex items-center">
+                                    <h4 class="font-bold text-lg mr-auto text-gray-700 flex items-center">
+                                        Sheen Percentage:
+                                    </h4>
+                                    <span class="px-2 py-1 rounded-lg bg-gray-200 text-gray-900 text-lg">
+                                        {{ sheen_percentage }} %
+                                    </span>
+                                </div>
+                                <div class="overflow-hidden bg-gray-200 h-7 rounded-full w-full">
+                                    <span class="h-full bg-gray-900 w-full block rounded-full"
+                                        style="width:{{ sheen_percentage }}%" ></span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </section>
                 </div>
 
                 <!-- Trend Chart (wide card) -->
@@ -155,33 +234,47 @@
                         <!-- Chart icons placeholder -->
                         <div class="flex space-x-1">
                             <button class="p-1 rounded hover:bg-gray-100">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M11 11V3m0 0l-1.5 3m3-3l1.5 3M8 17h8M8 13h4m-4 
-                           4v1a1 1 0 001 1h2a1 1 0 001-1v-1m-3-3v-2" />
-                                </svg>
+                                <!-- SVG -->
                             </button>
                             <button class="p-1 rounded hover:bg-gray-100">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M11.049 2.927c.3-.6 1.102-.6 1.402 0l.43.86a2 
-                           2 0 001.507 1.09l.95.138c.66.096.927.91.426 
-                           1.365l-.69.638a2 2 0 00-.513 1.896l.234.945c.163.658-.505 
-                           1.192-1.09.866l-.85-.45a2 2 0 00-1.926 
-                           0l-.85.45c-.585.327-1.253-.208-1.09-.866l.234-.945a2 2 
-                           0 00-.513-1.896l-.69-.638c-.5-.455-.234-1.27.426-1.365l.95-.138a2 
-                           2 0 001.507-1.09l.43-.86z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M19.428 15.341A8 8 0 1112 4v4" />
-                                </svg>
+                                <!-- SVG -->
                             </button>
                         </div>
                     </div>
                     <!-- Chart placeholder -->
-                    <div class="h-40 border rounded-lg flex items-center justify-center">
-                        <span class="text-sm text-gray-500">[Line Chart Placeholder]</span>
+                    <div id="line-example-10">
+                        <table
+                            class="charts-css line multiple show-data show-labels show-primary-axis show-4-secondary-axes show-data-axes">
+                            <caption> Line Example #10 </caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col"> Year </th>
+                                    <th scope="col"> Progress 1 </th>
+                                    <th scope="col"> Progress 2 </th>
+                                    <th scope="col"> Progress 3 </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th scope="row"> -2 </th>
+                                    <td style="--start: 0.1; --end: 0.5;"><span class="data"> 5 </span></td>
+                                    <td style="--start: 0.0; --end: 0.2;"><span class="data"> 2 </span></td>
+                                    <td style="--start: 0.2; --end: 0.4;"><span class="data"> 4 </span></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row"> -1 </th>
+                                    <td style="--start: 0.5; --end: 0.8;"><span class="data"> 8 </span></td>
+                                    <td style="--start: 0.2; --end: 0.5;"><span class="data"> 5 </span></td>
+                                    <td style="--start: 0.4; --end: 0.1;"><span class="data"> 1 </span></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row"> Current </th>
+                                    <td style="--start: 0.8; --end: 0.4;"><span class="data"> 4 </span></td>
+                                    <td style="--start: 0.5; --end: 0.3;"><span class="data"> 3 </span></td>
+                                    <td style="--start: 0.1; --end: 0.2;"><span class="data"> 2 </span></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -198,16 +291,38 @@
                         </a>
                     </div>
                     <!-- Placeholder for arrow diagram -->
-                    <div class="h-32 border rounded-lg flex items-center justify-center">
-                        <img src="https://via.placeholder.com/100x60.png?text=Arrows" alt="History Arrows"
-                            class="object-contain" />
+                    <div class="grid grid-cols-10 gap-4">
+                        <div class="p-2">
+                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-green-400 to-green-500"></div>
+                            <img src="{{ url_for('static', filename='images/shingle_011324.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
+                        </div>
+                        <div class="p-2">
+                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-green-400 to-green-500"></div>
+                            <img src="{{ url_for('static', filename='images/shingle_010937.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
+                        </div>
+                        <div class="p-2">
+                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-yellow-300 to-yellow-400"></div>
+                            <img src="{{ url_for('static', filename='images/shingle_023124.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
+                        </div>
+                        <div class="p-2">
+                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-yellow-300 to-yellow-400"></div>
+                            <img src="{{ url_for('static', filename='images/shingle_021547.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
+                        </div>
+                        <div class="p-2">
+                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-orange-400 to-orange-500"></div>
+                            <img src="{{ url_for('static', filename='images/shingle_235752.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
+                        </div>
+                        <div class="p-2">
+                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-orange-400 to-orange-500"></div>
+                            <img src="{{ url_for('static', filename='images/shingle_235749.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
     <div class="footer w-full text-center p-2 bg-gray-50 dark:bg-gray-900 dark:text-white">
-        &copy; 2025 Standard Digital
+        &copy; 2025 Standard Digital | Made with ❤️ for GAF Inc.
     </div>
 
     <!-- Modal Structure -->
@@ -230,7 +345,7 @@
         }
 
         // Close the modal when clicking outside the image
-        window.onclick = function(event) {
+        window.onclick = function (event) {
             var modal = document.getElementById("imageModal");
             if (event.target == modal) {
                 modal.style.display = "none";
