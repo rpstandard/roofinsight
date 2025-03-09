@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roof Insights</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/design.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/charts.min.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-gray-100 flex flex-col h-screen">
+    <!-- Main container -->
+    <div class="flex flex-1 h-screen">
+        <!-- Sidebar -->
+        <aside class="bg-gray-900 text-white w-96 flex flex-col h-full">
+            <a href="/">
+            <div class="p-4 mt-4">
+                <h1 class="text-2xl font-bold text-white">RoofInsights 1.0</h1>
+                <p class="mt-1.5 text-sm text-gray-400">
+                    Quality Check System for Roofing Shingles
+                </p>
+            </div>
+            </a>
+
+            <!-- Video / Toggle switch -->
+            <div class="p-4 flex flex-col items-center space-y-2">
+                <!-- Placeholder for live video feed -->
+                <div
+                    class="w-full bg-gray-700 flex items-center justify-center mb-2 border border-gray-600 rounded-2xl h-60">
+                    <img src="{{ url_for('video_stream') }}" class="grid-image rounded-2xl"
+                        onclick="openModal(this.src)" />
+                </div>
+                <!-- Live video label + toggle -->
+                <div class="mt-4 flex items-center space-x-6">
+                    <span class="text-3xl font-medium">Live Video</span>
+                    <!-- Simple toggle (just a placeholder) -->
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" class="sr-only peer" checked>
+                        <div class="w-17 h-10 bg-red-600 rounded-full peer-checked:bg-gray-600 transition-colors"></div>
+                        <div
+                            class="absolute left-0.5 w-8 h-8 bg-white border border-gray-300 rounded-full transition-transform peer-checked:translate-x-8">
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+
+            <!-- Nav Menu -->
+            <nav class="mt-auto mb-4">
+                <ul>
+                    <!-- Dashboard -->
+                    <li class="flex items-center">
+                        <a href="/"
+                            class="flex items-center w-full px-4 py-3 bg-gray-900 hover:bg-red-600 selection:bg-red-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="h-6 w-6 mr-2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                            </svg>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="flex items-center">
+                        <a href="/analytics"
+                            class="flex items-center w-full px-4 py-3 bg-red-900 hover:bg-red-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="h-6 w-6 mr-2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                            </svg>
+                            Analytics
+                        </a>
+                    </li>
+                    <li class="flex items-center">
+                        <a href="#"
+                            class="flex items-center w-full px-4 py-3 bg-gray-900 hover:bg-red-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="h-6 w-6 mr-2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            </svg>
+                            Settings
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="p-4 mt-4">
+                <button
+                    class="inline-block rounded bg-red-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring"
+                    type="button">
+                    Contact Support
+                </button>
+            </div>
+        </aside>
+        <!-- Main content -->
+        <main class="flex-1 p-6">
+            <!-- Top Bar -->
+            <div class="flex items-center justify-between mb-6">
+                <!-- Dashboard Title -->
+                <h1 class="text-2xl font-semibold">Analytics Dashboard</h1>
+                <!-- User Profile -->
+                <div class="flex items-center space-x-3">
+                    <div class="relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold">Ennis Plant</h2>
+                        <span class="text-sm text-gray-500">Admin</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Main content goes here -->
+            <!-- Dashboard Cards: 2 x 2 grid on all screens -->
+            <div class="grid grid-cols-6 gap-6">
+                <!-- Shingle Analysis (wide card) -->
+                <div class="col-span-3 bg-white p-4 rounded-lg shadow">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-lg font-semibold">History</h2>
+                    </div>
+                    <div class="container mx-auto p-4">
+                        <div class="image-grid">
+                            {% for img_path in images %}
+                                <div class="image-item">
+                                    {% set date_str = img_path.split('/')[1] %}
+                                    {% set time_str = img_path.split('_')[1].split('.')[0] %}
+                                    {% set formatted_date = date_str[:4] ~ '-' ~ date_str[4:6] ~ '-' ~ date_str[6:] %}
+                                    {% set formatted_time = time_str[:2] ~ ':' ~ time_str[2:4] ~ ':' ~ time_str[4:] %}
+                                    <h3 class="text-center">{{ formatted_date }} {{ formatted_time }}</h3>
+                                    <img src="{{ url_for('static', filename=img_path) }}" alt="Shingle Capture" onclick="openModal(this.src)">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trend Chart (wide card) -->
+                <div class="col-span-3 bg-white p-4 rounded-lg shadow">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-lg font-semibold">Charts</h2>
+                    </div>
+                    <canvas id="trendChart1"></canvas>
+                    <br>
+                    <br>
+                    <canvas id="trendChart2"></canvas>
+                </div>
+
+                <!-- History Card
+                <div class="col-span-6 bg-white p-4 rounded-lg shadow">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-lg font-semibold">History</h2>
+                        <a href="#" class="text-gray-400 hover:text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </a>
+                    </div>
+                    <div class="grid grid-cols-10 gap-4">
+                        <div class="p-2">
+                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-green-400 to-green-500"></div>
+                            <img src="{{ url_for('static', filename='images/shingle_011324.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
+                        </div>
+                        <div class="p-2">
+                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-green-400 to-green-500"></div>
+                            <img src="{{ url_for('static', filename='images/shingle_010937.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
+                        </div>
+                        <div class="p-2">
+                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-yellow-300 to-yellow-400"></div>
+                            <img src="{{ url_for('static', filename='images/shingle_023124.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
+                        </div>
+                        <div class="p-2">
+                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-yellow-300 to-yellow-400"></div>
+                            <img src="{{ url_for('static', filename='images/shingle_021547.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
+                        </div>
+                        <div class="p-2">
+                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-orange-400 to-orange-500"></div>
+                            <img src="{{ url_for('static', filename='images/shingle_235752.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
+                        </div>
+                        <div class="p-2">
+                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-orange-400 to-orange-500"></div>
+                            <img src="{{ url_for('static', filename='images/shingle_235749.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
+                        </div>
+                    </div>
+                </div> -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="imageModal" class="modal">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="modalImage">
+    </div>
+
+    <script>
+        function openModal(src) {
+            var modal = document.getElementById("imageModal");
+            var modalImg = document.getElementById("modalImage");
+            modal.style.display = "block";
+            modalImg.src = src;
+        }
+
+        function closeModal() {
+            var modal = document.getElementById("imageModal");
+            modal.style.display = "none";
+        }
+
+        // Close the modal when clicking outside the image
+        window.onclick = function (event) {
+            var modal = document.getElementById("imageModal");
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        Chart.defaults.font.size = 16;
+        var ctx1 = document.getElementById("trendChart1").getContext("2d");
+        var lineChart1 = new Chart(ctx1, {
+            type: "line",
+            data: {
+                labels: {{ chartLabels | safe }},
+                datasets: [
+                    {
+                        label: "Distribution Percentage",
+                        data: {{ chartValueDS | safe }},
+                        borderColor: "rgb(255, 99, 132)",
+                        backgroundColor: "rgb(255, 99, 132)",
+                        pointRadius: 5, // Adjust this value to change point size
+                        borderWidth: 3,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true
+            }
+        });
+
+        var ctx2 = document.getElementById("trendChart2").getContext("2d");
+        var lineChart2 = new Chart(ctx2, {
+            type: "line",
+            data: {
+                labels: {{ chartLabels | safe }},
+                datasets: [
+                    {
+                        label: "Sheen Percentage",
+                        data: {{ chartValueSP | safe }},
+                        borderColor: "rgba(54, 162, 235, 1)",
+                        backgroundColor: "rgba(54, 162, 235, 0.2)",
+                        pointRadius: 5, // Adjust this value to change point size
+                        borderWidth: 3,
+                        fill: false,
+                    },
+                    {
+                        label: "Sheen Spots Count",
+                        data: {{ chartValueCS | safe }},
+                        borderColor: "rgba(75, 192, 192, 1)",
+                        backgroundColor: "rgba(75, 192, 192, 0.2)",
+                        pointRadius: 5, // Adjust this value to change point size
+                        borderWidth: 3,
+                        fill: false,
+                    }
+                ]
+            },
+            options: {
+                responsive: true
+            }
+        });
+    </script>
+</body>
+
+</html>

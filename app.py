@@ -11,6 +11,7 @@ import sys
 import argparse
 import os
 from datetime import datetime
+import json
 
 from jetson_inference import backgroundNet
 from jetson_utils import (videoSource, videoOutput, loadImage, Log, cudaFromNumpy, cudaToNumpy,
@@ -27,7 +28,7 @@ app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 # Directory to save images
-SAVE_DIR = '/home/roofinsights/workspace/roofinsight/shingle_images'
+SAVE_DIR = '/home/roofinsights/workspace/roofinsight/static/images'
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 # Global variables
@@ -51,7 +52,58 @@ current_model = False
 total_sheen_area = 0
 shingle_analysis_dst = None
 last_10_files = []
+chartLabels = []
+chartValueDS = []
+chartValueSP = []
+chartValueCS = []
 
+def load_chart_data():
+    global chartLabels, chartValueDS, chartValueSP, chartValueCS
+    try:
+        with open('chart_data.json', 'r') as f:
+            data = json.load(f)
+            chartLabels = data.get('chartLabels', [])
+            chartValueDS = data.get('chartValueDS', [])
+            chartValueSP = data.get('chartValueSP', [])
+            chartValueCS = data.get('chartValueCS', [])
+    except FileNotFoundError:
+        # File does not exist, initialize with empty lists
+        chartLabels = []
+        chartValueDS = []
+        chartValueSP = []
+        chartValueCS = []
+
+# filepath: /home/roofinsights/workspace/roofinsight/app.py
+def save_chart_data():
+    data = {
+        'chartLabels': chartLabels,
+        'chartValueDS': chartValueDS,
+        'chartValueSP': chartValueSP,
+        'chartValueCS': chartValueCS
+    }
+    with open('chart_data.json', 'w') as f:
+        json.dump(data, f)
+
+# Update history with new values
+def update_history(distribution_score, sheen_percentage, count_score):
+    timestamp = datetime.now().strftime('%m/%d %H:%M')
+
+    # Ensure the lists do not exceed 7 elements
+    if len(chartLabels) > 10:
+        chartLabels.pop(0)
+    if len(chartValueDS) > 10:
+        chartValueDS.pop(0)
+    if len(chartValueSP) > 10:
+        chartValueSP.pop(0)
+    if len(chartValueCS) > 10:
+        chartValueCS.pop(0)
+
+    chartLabels.append(timestamp)
+    chartValueDS.append(round(distribution_score*5, 2))
+    chartValueSP.append(round(sheen_percentage, 2))
+    chartValueCS.append(count_score)
+    save_chart_data()
+    
 def run_inference(image):
     global predictor_c, api_key, switch_model, current_model
     """
@@ -233,6 +285,7 @@ def process_image_in_thread():
 
                 # Calculate sheen percentage from processed_image_1
                 sheen_percentage = calculate_sheen_percentage(shingle_analysis_dst)
+                update_history(distribution_score, sheen_percentage, count_score)
 
         time.sleep(1)  # Adjust as needed
 
@@ -245,7 +298,46 @@ def index():
                            similarity_score=round(similarity_score, 2),
                            distribution_score=round(distribution_score*5, 2),
                            last_images=last_10_files,
-                           num_patches=count_score)
+                           num_patches=count_score,
+                           chartLabels=chartLabels,
+                           chartValueDS=chartValueDS,
+                           chartValueSP=chartValueSP,
+                           chartValueCS=chartValueCS)
+
+@app.route('/analytics')
+def analytics_dashboard():
+    # Directory to save images
+    SHINGLE_IMAGES_DIR = 'static/images'
+    
+    # Get list of files in the directory
+    files = []
+    for date_dir in os.listdir(SHINGLE_IMAGES_DIR):
+        date_path = os.path.join(SHINGLE_IMAGES_DIR, date_dir)
+        if os.path.isdir(date_path):
+            files.extend([os.path.join(date_path, f) for f in os.listdir(date_path) if f.endswith('.png')])
+    
+    # Sort files by modification time
+    files.sort(key=os.path.getmtime, reverse=True)
+    # Get the last 30 files
+    last_30_files = files[:30]
+
+    # Make paths relative to the static directory
+    last_30_files = [f.replace('static/', '') for f in last_30_files]
+
+    # Pass these file paths to the template
+    return render_template('analytics.html', 
+                           images=last_30_files,
+                           sheen_percentage=round(sheen_percentage, 2),
+                           processed_image_2=processed_image_2,
+                           switch_model=switch_model,
+                           similarity_score=round(similarity_score, 2),
+                           distribution_score=round(distribution_score*5, 2),
+                           last_images=last_10_files,
+                           num_patches=count_score,
+                           chartLabels=chartLabels,
+                           chartValueDS=chartValueDS,
+                           chartValueSP=chartValueSP,
+                           chartValueCS=chartValueCS)
 
 def generate():
     global latest_image
@@ -289,7 +381,11 @@ def capture():
                            similarity_score=round(similarity_score, 2),
                            distribution_score=round(distribution_score*5, 2),
                            last_images=last_10_files,
-                           num_patches=count_score)
+                           num_patches=count_score,
+                           chartLabels=chartLabels,
+                           chartValueDS=chartValueDS,
+                           chartValueSP=chartValueSP,
+                           chartValueCS=chartValueCS)
 
 
 def calculate_sheen_percentage(image):
@@ -358,6 +454,7 @@ if __name__ == '__main__':
     # load the background removal network
     net = backgroundNet(args.network, sys.argv)
     input = videoSource(args.input, argv=sys.argv)
+    load_chart_data()
 
     # Start the image capture thread
     capture_thread = threading.Thread(target=capture_image)
