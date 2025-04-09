@@ -1,2 +1,7 @@
 # Ignore static/images directory
 static/images/
+static/raw_images/
+# Ignore all .pyc files
+*.pyc
+# Ignore all .pyo files
+*.pyo   

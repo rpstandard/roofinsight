@@ -1,4 +1,4 @@
-from flask import Flask, Response, render_template, url_for, request
+from flask import Flask, Response, render_template, url_for, request, jsonify
 from pypylon import pylon
 import numpy as np
 import cv2
@@ -29,7 +29,10 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 # Directory to save images
 SAVE_DIR = '/home/roofinsights/workspace/roofinsight/static/images'
+RAW_SAVE_DIR = '/home/roofinsights/workspace/roofinsight/static/raw_images'
+CONFIG_FILE = '/home/roofinsights/workspace/roofinsight/config.json'
 os.makedirs(SAVE_DIR, exist_ok=True)
+os.makedirs(RAW_SAVE_DIR, exist_ok=True)
 
 # Global variables
 latest_image = None
@@ -40,7 +43,9 @@ distribution_score = 0.0
 previous_sheen_percentage = None
 count_score = 0
 pixel_count_shingle = 0
-
+background_removal_enabled = True  # New variable for background removal state
+landing_lens_enabled = True  # New variable for LandingLens model state
+sheen_category = 'no_sheen'  # Default sheen category
 
 image_lock = threading.Lock()
 camera_source = None # Add a variable to store the camera source
@@ -56,6 +61,35 @@ chartLabels = []
 chartValueDS = []
 chartValueSP = []
 chartValueCS = []
+
+# Load configuration from file
+def load_config():
+    global background_removal_enabled, landing_lens_enabled, sheen_category
+    try:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r') as f:
+                config = json.load(f)
+                background_removal_enabled = config.get('background_removal_enabled', True)
+                landing_lens_enabled = config.get('landing_lens_enabled', True)
+                sheen_category = config.get('sheen_category', 'no_sheen')
+    except Exception as e:
+        print(f"Error loading config: {e}")
+
+# Save configuration to file
+def save_config():
+    try:
+        config = {
+            'background_removal_enabled': background_removal_enabled,
+            'landing_lens_enabled': landing_lens_enabled,
+            'sheen_category': sheen_category
+        }
+        with open(CONFIG_FILE, 'w') as f:
+            json.dump(config, f)
+    except Exception as e:
+        print(f"Error saving config: {e}")
+
+# Load configuration on startup
+load_config()
 
 def load_chart_data():
     global chartLabels, chartValueDS, chartValueSP, chartValueCS
@@ -149,7 +183,7 @@ def capture_image():
             print(f"Error: {e}")
         finally:
             camera.StopGrabbing()
-            camera.Close()
+            camera.Close() 
     elif camera_source == 'usb':
         # Use the USB camera at /dev/video0
         cap = cv2.VideoCapture('/dev/video0')
@@ -175,6 +209,7 @@ def capture_image():
 def process_image_in_thread():
     global latest_image, processed_image_1, processed_image_2, sheen_percentage, new_capture, pixel_count_shingle
     global total_sheen_area, distribution_score, shingle_analysis_dst, last_10_files, count_score
+    global background_removal_enabled, landing_lens_enabled
 
     while True:
         if latest_image is not None:
@@ -186,14 +221,19 @@ def process_image_in_thread():
             image_to_process = cv2.cvtColor(image_to_process, cv2.COLOR_BGR2BGRA)
             cuda_image = cudaFromNumpy(image_to_process)
 
-            # Perform background removal
-            net.Process(cuda_image, filter="linear")
-            image_wo_background = cudaToNumpy(cuda_image)
-            image_wo_background_noalpha = cv2.cvtColor(image_wo_background, cv2.COLOR_BGRA2RGB)
+            # Perform background removal only if enabled
+            if background_removal_enabled:
+                net.Process(cuda_image, filter="linear")
+                image_wo_background = cudaToNumpy(cuda_image)
+                image_wo_background_noalpha = cv2.cvtColor(image_wo_background, cv2.COLOR_BGRA2RGB)
+            else:
+                image_wo_background = cudaToNumpy(cuda_image)
+                image_wo_background_noalpha = cv2.cvtColor(image_to_process, cv2.COLOR_BGRA2RGB)
 
             if new_capture:
                 predictions = None
-                predictions = run_inference(image_wo_background_noalpha)
+                if landing_lens_enabled:
+                    predictions = run_inference(image_wo_background_noalpha)
                 if predictions:
                     
                     # Initialize variables
@@ -302,7 +342,10 @@ def index():
                            chartLabels=chartLabels,
                            chartValueDS=chartValueDS,
                            chartValueSP=chartValueSP,
-                           chartValueCS=chartValueCS)
+                           chartValueCS=chartValueCS,
+                           background_removal_enabled=background_removal_enabled,
+                           landing_lens_enabled=landing_lens_enabled,
+                           sheen_category=sheen_category)
 
 @app.route('/analytics')
 def analytics_dashboard():
@@ -318,8 +361,8 @@ def analytics_dashboard():
     
     # Sort files by modification time
     files.sort(key=os.path.getmtime, reverse=True)
-    # Get the last 30 files
-    last_30_files = files[:30]
+    # Get the last 50 files
+    last_30_files = files[:50]
 
     # Make paths relative to the static directory
     last_30_files = [f.replace('static/', '') for f in last_30_files]
@@ -374,6 +417,23 @@ def capture():
         switch_model = True if model_selection == 'model_b' else False
         new_capture = True
 
+        # Save raw image when capture button is clicked
+        if latest_image is not None:
+            utc_now = datetime.now()
+            date_str = utc_now.strftime('%Y%m%d')
+            time_str = utc_now.strftime('%H%M%S')
+            
+            # Create category subfolder
+            category_dir = os.path.join(RAW_SAVE_DIR, sheen_category)
+            os.makedirs(category_dir, exist_ok=True)
+            
+            # Create date subfolder within category
+            date_dir = os.path.join(category_dir, date_str)
+            os.makedirs(date_dir, exist_ok=True)
+            
+            raw_filename = os.path.join(date_dir, f'raw_{time_str}.png')
+            cv2.imwrite(raw_filename, latest_image)
+
     return render_template('index.html',
                            sheen_percentage=round(sheen_percentage, 2),
                            processed_image_2=processed_image_2,
@@ -385,7 +445,10 @@ def capture():
                            chartLabels=chartLabels,
                            chartValueDS=chartValueDS,
                            chartValueSP=chartValueSP,
-                           chartValueCS=chartValueCS)
+                           chartValueCS=chartValueCS,
+                           background_removal_enabled=background_removal_enabled,
+                           landing_lens_enabled=landing_lens_enabled,
+                           sheen_category=sheen_category)
 
 
 def calculate_sheen_percentage(image):
@@ -411,16 +474,44 @@ def processed_image_2_stream():
         while True:
             with image_lock:
                 if processed_image_2 is not None:
+                    # Add a cache-busting parameter to the response headers
                     success, png = cv2.imencode('.png', shingle_analysis_dst.copy())
                     if success:
                         frame = png.tobytes()
                         yield (b'--frame\r\n'
-                               b'Content-Type: image/png\r\n\r\n' + frame + b'\r\n\r\n')
+                               b'Content-Type: image/png\r\n'
+                               b'Cache-Control: no-cache, no-store, must-revalidate\r\n'
+                               b'Pragma: no-cache\r\n'
+                               b'Expires: 0\r\n\r\n' + frame + b'\r\n\r\n')
                     
             # Control the refresh rate (e.g., 1 second):
-            time.sleep(2)
+            time.sleep(1)
     return Response(generate(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/toggle_bg_removal', methods=['POST'])
+def toggle_bg_removal():
+    global background_removal_enabled
+    data = request.get_json()
+    background_removal_enabled = data.get('enabled', True)
+    save_config()  # Save configuration after toggle
+    return jsonify({'status': 'success', 'enabled': background_removal_enabled})
+
+@app.route('/toggle_landing_lens', methods=['POST'])
+def toggle_landing_lens():
+    global landing_lens_enabled
+    data = request.get_json()
+    landing_lens_enabled = data.get('enabled', True)
+    save_config()  # Save configuration after toggle
+    return jsonify({'status': 'success', 'enabled': landing_lens_enabled})
+
+@app.route('/set_sheen_category', methods=['POST'])
+def set_sheen_category():
+    global sheen_category
+    data = request.get_json()
+    sheen_category = data.get('category', 'no_sheen')
+    save_config()  # Save configuration after category change
+    return jsonify({'status': 'success', 'category': sheen_category})
 
 if __name__ == '__main__':
     # parse the command line
@@ -447,7 +538,23 @@ if __name__ == '__main__':
     if camera_source == 'pylon':
         camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
         camera.Open()
-        camera.PixelFormat.SetValue('RGB8')
+        
+        # Load camera configuration from .pfs file if it exists
+        config_file = '/home/roofinsights/workspace/roofinsight/camera_config.pfs'
+        if os.path.exists(config_file):
+            try:
+                # Load the configuration file
+                pylon.FeaturePersistence.Load(config_file, camera.GetNodeMap(), True)
+                print(f"Successfully loaded camera configuration from {config_file}")
+            except Exception as e:
+                print(f"Error loading camera configuration: {e}")
+                # Fall back to default RGB8 setting if config loading fails
+                camera.PixelFormat.SetValue('RGB8')
+        else:
+            # Use default RGB8 setting if no config file exists
+            camera.PixelFormat.SetValue('RGB8')
+            print(f"No camera configuration file found at {config_file}, using default RGB8 setting")
+        
         camera.Close()
     
 

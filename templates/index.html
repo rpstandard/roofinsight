@@ -27,48 +27,78 @@
 
             <!-- Video / Toggle switch -->
             <div class="p-4 flex flex-col items-center space-y-2">
-                <!-- Placeholder for live video feed -->
-                <div
-                    class="w-full bg-gray-700 flex items-center justify-center mb-2 border border-gray-600 rounded-2xl h-60">
-                    <img src="{{ url_for('video_stream') }}" class="grid-image rounded-2xl"
-                        onclick="openModal(this.src)" />
+                <!-- Live video feed with click functionality -->
+                <div class="w-full bg-gray-700 flex flex-col items-center justify-center mb-2 border border-gray-600 rounded-2xl">
+                    <img src="{{ url_for('video_stream') }}" class="grid-image rounded-2xl cursor-pointer" 
+                         onclick="openModal(this.src)" alt="Live Video Feed" />
                 </div>
-                <!-- Live video label + toggle -->
+                <!-- Live video label -->
                 <div class="mt-4 flex items-center space-x-6">
                     <span class="text-3xl font-medium">Live Video</span>
-                    <!-- Simple toggle (just a placeholder) -->
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" class="sr-only peer" checked>
-                        <div class="w-17 h-10 bg-red-600 rounded-full peer-checked:bg-gray-600 transition-colors"></div>
-                        <div
-                            class="absolute left-0.5 w-8 h-8 bg-white border border-gray-300 rounded-full transition-transform peer-checked:translate-x-8">
-                        </div>
+                </div>
+            </div>
+
+            <!-- Toggle Controls -->
+            <div class="px-4 py-2 space-y-4">
+                <!-- Background Removal Toggle -->
+                <div class="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
+                    <span class="text-white">Background Removal</span>
+                    <label class="switch">
+                        <input type="checkbox" id="bgRemovalToggle" {% if background_removal_enabled %}checked{% endif %}>
+                        <span class="slider round"></span>
                     </label>
+                </div>
+                
+                <!-- ML Model Toggle -->
+                <div class="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
+                    <span class="text-white">ML Model</span>
+                    <label class="switch">
+                        <input type="checkbox" id="landingLensToggle" {% if landing_lens_enabled %}checked{% endif %}>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                
+                <!-- Sheen Category Selection -->
+                <div class="bg-gray-800 p-3 rounded-lg">
+                    <span class="text-white block mb-2">Sheen Category:</span>
+                    <div class="space-y-2">
+                        <div class="flex items-center">
+                            <input type="radio" id="noSheen" name="sheenCategory" value="no_sheen" class="mr-2" {% if sheen_category == 'no_sheen' %}checked{% endif %}>
+                            <label for="noSheen" class="text-white">No Sheen</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="radio" id="slightSheen" name="sheenCategory" value="slight_sheen" class="mr-2" {% if sheen_category == 'slight_sheen' %}checked{% endif %}>
+                            <label for="slightSheen" class="text-white">Slight Sheen</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="radio" id="moderateSheen" name="sheenCategory" value="moderate_sheen" class="mr-2" {% if sheen_category == 'moderate_sheen' %}checked{% endif %}>
+                            <label for="moderateSheen" class="text-white">Moderate Sheen</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="radio" id="highSheen" name="sheenCategory" value="high_sheen" class="mr-2" {% if sheen_category == 'high_sheen' %}checked{% endif %}>
+                            <label for="highSheen" class="text-white">High Sheen</label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Capture Image Button and Model Selection -->
-
             <form action="/capture" method="post">
                 <div class="p-4 mt-4 flex items-center justify-between">
                     <div class="p-4">
                         <!-- Model Selection Dropdown -->
-                        <label for="model_selection" class="ml-4">Select Model</label>
-                        <select id="model_selection" name="model_selection"
-                            class="py-2 px-4 rounded bg-white text-gray-900">
+                        <label for="model_selection" class="block text-xs font-medium text-white mb-1">Select Model</label>
+                        <select id="model_selection" name="model_selection" class="block w-full px-2 py-1 text-sm bg-gray-800 text-white border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
                             <option value="model_a" {% if not switch_model %}selected{% endif %}>Model A</option>
                             <option value="model_b" {% if switch_model %}selected{% endif %}>Model B</option>
                         </select>
                     </div>
                     <div class="p-4">
                         <!-- Capture Button -->
-                        <button type="submit"
-                            class="h-32 w-48 self-center justify-center bg-gray-600 hover:bg-red-900 text-white font-bold py-2 px-4 rounded">Capture
-                            Image</button>
+                        <button type="submit" class="h-32 w-48 self-center justify-center bg-gray-600 hover:bg-red-900 text-white font-bold py-2 px-4 rounded">Capture Image</button>
                     </div>
                 </div>
             </form>
-
 
             <!-- Nav Menu -->
             <nav class="mt-auto mb-4">
@@ -144,30 +174,43 @@
             <!-- Dashboard Cards: 2 x 2 grid on all screens -->
             <div class="grid grid-cols-6 gap-6">
                 <!-- Shingle Analysis (wide card) -->
-                <div class="col-span-3 bg-white p-4 rounded-lg shadow">
+                <div class="col-span-3 bg-white p-4 rounded-lg shadow flex flex-col">
                     <h2 class="text-lg font-semibold mb-2">Shingle Analysis</h2>
-                    <div class="border rounded-lg overflow-hidden">
+                    <div class="border rounded-lg overflow-hidden relative flex-1">
+                        <!-- Loading indicator (hidden by default) -->
+                        <div id="loadingIndicator" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 bg-opacity-75 z-10 hidden">
+                            <div class="spinner"></div>
+                            <div class="mt-4 text-lg font-semibold text-gray-700">Processing...</div>
+                        </div>
                         <!-- Placeholder for an actual image -->
-                        <img src="{{ url_for('processed_image_2_stream') }}" class="object-cover w-full h-160"
+                        <img id="shingleAnalysisImage" src="{{ url_for('processed_image_2_stream') }}" class="object-cover w-full h-full"
                             onclick="openModal(this.src)" />
                     </div>
                 </div>
 
                 <!-- Trend Chart (wide card) -->
-                <div class="col-span-3 bg-white p-4 rounded-lg shadow">
+                <div class="col-span-3 bg-white p-4 rounded-lg shadow flex flex-col">
                     <div class="flex items-center justify-between mb-2">
                         <h2 class="text-lg font-semibold">Trend 1</h2>
                     </div>
-                    <canvas id="trendChart1"></canvas>
+                    <div class="flex-1">
+                        <canvas id="trendChart1"></canvas>
+                    </div>
+                    <div class="mt-4">
+                        <h2 class="text-lg font-semibold mb-2">Trend 2</h2>
+                        <div class="flex-1">
+                            <canvas id="trendChart2"></canvas>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Result Card -->
-                <div class="col-span-3 bg-white p-4 rounded-lg shadow">
+                <div class="col-span-3 bg-white p-4 rounded-lg shadow flex flex-col">
                     <h2 class="text-lg font-semibold mb-2">Result</h2>
                     <!-- Gradient box -->
                     {% if sheen_percentage > 10 %}
-                    <div class="flex items-center justify-center w-full h-48 rounded-md bg-gradient-to-r from-red-600 to-red-700">
-                        <span class="text-4xl font-bold text-white">Severe Sheen</span>
+                    <div class="flex items-center justify-center w-full h-32 rounded-md bg-gradient-to-r from-red-600 to-red-700">
+                        <span class="text-3xl font-bold text-white">Severe Sheen</span>
                     </div>
                     {% elif sheen_percentage > 8 %}
                     <div class="flex items-center justify-center w-full h-48 rounded-md bg-gradient-to-r from-orange-400 to-orange-500">
@@ -235,59 +278,10 @@
 
                     </section>
                 </div>
-                
-                <!-- Trend Chart (wide card) -->
-                <div class="col-span-3 bg-white p-4 rounded-lg shadow">
-                    <div class="flex items-center justify-between mb-2">
-                        <h2 class="text-lg font-semibold">Trend 2</h2>
-                    </div>
-                    <canvas id="trendChart2"></canvas>
-                </div>
-
-                <!-- History Card
-                <div class="col-span-6 bg-white p-4 rounded-lg shadow">
-                    <div class="flex items-center justify-between mb-2">
-                        <h2 class="text-lg font-semibold">History</h2>
-                        <a href="#" class="text-gray-400 hover:text-gray-700">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </a>
-                    </div>
-                    <div class="grid grid-cols-10 gap-4">
-                        <div class="p-2">
-                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-green-400 to-green-500"></div>
-                            <img src="{{ url_for('static', filename='images/shingle_011324.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
-                        </div>
-                        <div class="p-2">
-                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-green-400 to-green-500"></div>
-                            <img src="{{ url_for('static', filename='images/shingle_010937.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
-                        </div>
-                        <div class="p-2">
-                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-yellow-300 to-yellow-400"></div>
-                            <img src="{{ url_for('static', filename='images/shingle_023124.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
-                        </div>
-                        <div class="p-2">
-                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-yellow-300 to-yellow-400"></div>
-                            <img src="{{ url_for('static', filename='images/shingle_021547.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
-                        </div>
-                        <div class="p-2">
-                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-orange-400 to-orange-500"></div>
-                            <img src="{{ url_for('static', filename='images/shingle_235752.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
-                        </div>
-                        <div class="p-2">
-                            <div class="flex items-center justify-center w-full h-20 rounded-md bg-gradient-to-r from-orange-400 to-orange-500"></div>
-                            <img src="{{ url_for('static', filename='images/shingle_235749.png') }}" class="w-full h-56 rounded" onclick="openModal(this.src)" />
-                        </div>
-                    </div>
-                </div> -->
             </div>
         </main>
     </div>
-    <div class="footer w-full text-center p-2 bg-gray-50 dark:bg-gray-900 dark:text-white">
-        &copy; 2025 Standard Digital | Made with ❤️ for GAF Inc.
-    </div>
+    <!-- Footer removed to prevent obstruction when scrolling -->
 
     <!-- Modal Structure -->
     <div id="imageModal" class="modal">
@@ -370,6 +364,206 @@
                 responsive: true
             }
         });
+    </script>
+    <script>
+    document.getElementById('bgRemovalToggle').addEventListener('change', function() {
+        fetch('/toggle_bg_removal', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                enabled: this.checked
+            })
+        });
+    });
+
+    document.getElementById('landingLensToggle').addEventListener('change', function() {
+        fetch('/toggle_landing_lens', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                enabled: this.checked
+            })
+        });
+    });
+    </script>
+    <script>
+    // Add event listener for sheen category radio buttons
+    document.querySelectorAll('input[name="sheenCategory"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            fetch('/set_sheen_category', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    category: this.value
+                })
+            });
+        });
+    });
+    </script>
+    <style>
+    .grid-image {
+        width: 100%;
+        height: 240px;
+        object-fit: cover;
+        transition: transform 0.2s;
+    }
+
+    .grid-image:hover {
+        transform: scale(1.02);
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+    }
+
+    input:checked + .slider {
+        background-color: #2196F3;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+
+    .slider.round {
+        border-radius: 24px;
+    }
+
+    .slider.round:before {
+        border-radius: 50%;
+    }
+
+    /* Spinner styles */
+    .spinner {
+        width: 60px;
+        height: 60px;
+        border: 6px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top-color: #dc2626; /* Red color to match theme */
+        animation: spin 1s ease-in-out infinite;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Dropdown styles */
+    select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FFFFFF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem;
+        color: white;
+    }
+
+    select option {
+        background-color: #1f2937;
+        color: white;
+    }
+
+    select:focus {
+        border-color: #dc2626;
+        box-shadow: 0 0 0 1px #dc2626;
+    }
+    </style>
+    <script>
+    // Function to show loading indicator
+    function showLoading() {
+        document.getElementById('loadingIndicator').classList.remove('hidden');
+        // Force the loading indicator to be visible
+        document.getElementById('loadingIndicator').style.display = 'flex';
+    }
+
+    // Function to hide loading indicator
+    function hideLoading() {
+        document.getElementById('loadingIndicator').classList.add('hidden');
+        // Ensure the loading indicator is hidden
+        document.getElementById('loadingIndicator').style.display = 'none';
+    }
+
+    // Function to update the shingle analysis image
+    function updateShingleAnalysisImage() {
+        const img = document.getElementById('shingleAnalysisImage');
+        // Add a timestamp to prevent caching
+        img.src = "{{ url_for('processed_image_2_stream') }}?" + new Date().getTime();
+    }
+
+    // Add event listener to the capture form
+    document.querySelector('form[action="/capture"]').addEventListener('submit', function() {
+        showLoading();
+        
+        // Set a timeout to hide the loading indicator after a reasonable time
+        // This is a fallback in case the image update doesn't trigger properly
+        setTimeout(hideLoading, 10000);
+        
+        // Set up a polling mechanism to check for the new image
+        let attempts = 0;
+        const maxAttempts = 30; // 30 attempts at 2-second intervals = 30 seconds max
+        
+        const checkForNewImage = setInterval(function() {
+            attempts++;
+            if (attempts >= maxAttempts) {
+                clearInterval(checkForNewImage);
+                hideLoading();
+                return;
+            }
+            
+            // Try to update the image
+            updateShingleAnalysisImage();
+            
+            // Check if the image has loaded
+            const img = document.getElementById('shingleAnalysisImage');
+            img.onload = function() {
+                clearInterval(checkForNewImage);
+                hideLoading();
+            };
+        }, 3000);
+    });
     </script>
 </body>
 
